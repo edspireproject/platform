@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <style>
+      
+    </style>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script>
+	$(function() {
+		$('#add').bind('submit', function(event){
+	        event.preventDefault();
+	        var $form = $(this);
+	        var payload = {
+	        	url: $form.find('input[name=url]').val()
+	        };
+	        $.ajax({
+	            type: "POST",
+	            url: "hopper/add.php?action=crawl",
+	            data: { payload: JSON.stringify(payload) },
+	            dataType: "json",
+	            complete: function( data ) {
+        			$('#resultAdd').text( JSON.stringify(data.responseJSON) );
+	        	}
+	       });
+		});
+		$('#peek').bind('submit', function(event){
+	        event.preventDefault();
+	        var $form = $(this);
+	        var supports = $form.find('input[name=supports]').val();
+	        $.ajax({
+	            type: "GET",
+	            url: "hopper/take.php?supports=" + supports,
+	            data: {},
+	            dataType: "json",
+	            complete: function( data ) {
+	            	console.log(data);
+	            	if(data.responseJSON)
+        				$('#resultPeek').text( JSON.stringify(data.responseJSON) );
+	        	}
+	       });
+		});
+		$.ajax({
+            type: "GET",
+            url: "harvester/list.php",
+            data: {},
+            dataType: "json",
+            complete: function( data ) {
+            	console.log(data);
+    			if(data.responseJSON) {
+    				for(var ix = 0; ix < data.responseJSON.length; ix++) {
+    					var row = data.responseJSON[ix];
+    					var $tr = $('<tr>');
+    					$tr.append( $('<td>').text( row.id ) );
+    					$tr.append( $('<td>').text( row.title ) );
+    					$tr.append( $('<td>').append(
+    						$('<a>').attr('title',row.url).attr('href',row.url).text(truncateAt(row.url, 64) ) ) );
+    					$('#harvest tbody').append( $tr );
+    					$tr.append( $('<td>').append(
+        						$('<a>').attr('href','harvester/html.php?id='+row.id).text('html') ) );
+    					$tr.append( $('<td>').append(
+        						$('<a>').attr('href','harvester/jpg.php?id='+row.id).text('jpeg') ) );    					
+    				}
+    			}
+        	}
+        });
+		$.ajax({
+            type: "GET",
+            url: "hopper/status.php",
+            data: {},
+            dataType: "json",
+            complete: function( data ) {
+            	console.log(data);
+            	var hopper = {};
+            	var status = [];
+    			if(data.responseJSON) {
+    				for(var ix = 0; ix < data.responseJSON.length; ix++) {
+    					var row = data.responseJSON[ix];
+    					if(!hopper[row.action])
+    						hopper[row.action] = {};
+    					if(status.indexOf(row.status)==-1)
+    						status.push(row.status);
+    					hopper[row.action][row.status] = row.total; 
+    				}
+    			}
+    			if(hopper) {
+    				for(var ix = 0; ix < status.length; ix++) {
+    					$('#hopper thead tr').append( $('<th>').text( status[ix] ) );
+    				}
+    				for(var key in hopper) {
+    					var $tr = $('<tr>');
+    					$tr.append( $('<th>').text( key ) );
+    					for(var ix = 0; ix < status.length; ix++) {
+    						$tr.append( $('<td>').text( hopper[key][status[ix]] ) );
+    					}
+    					$('#hopper tbody').append( $tr );
+    				}
+    			}
+        	}
+        });
+		$('#revert').bind('click', function(e){
+			e.preventDefault();
+			$.ajax({
+	            type: "GET",
+	            url: "hopper/revert.php",
+	            dataType: "json",
+	            complete: function( data ) {
+        			
+	        	}
+	       });
+		});
+		
+		function truncateAt(str, limit) {
+			if(str.length > limit)
+				return str.substring(0, limit) + '...';
+			else
+				return str;
+		}
+		
+	});
+    </script>
+    <title>Alcuin Server</title>
+  </head>
+  <body>
+    <h1>Alcuin Server</h1>
+    
+    <h3>Hopper</h3>
+    
+    <form id="add" action="index.html">
+    	<input type="text" name="url" />
+    	<input type="submit" value="Add" />
+    	<span id="resultAdd"></span>
+    </form>
+
+    <form id="peek" action="index.html">
+    	<input type="text" name="supports" value="crawl" />
+    	<input type="submit" value="Peek" />
+    	<span id="resultPeek"></span>
+    </form>
+    
+    <button id="revert">Revert</button>
+    
+    <table id="hopper">
+      <thead>
+      	<tr>
+      	  <th>action\status</th>
+      	</tr>
+      </thead>
+      <tbody>
+        
+      </tbody>
+    </table>
+    
+    <h3>Harvester</h3>
+    
+    <table id="harvest">
+      <thead>
+      	<tr>
+      	  <th>id</th>
+      	  <th>title</th>
+      	  <th>url</th>
+      	  <th>html</th>
+      	  <th>jpeg</th>
+      	</tr>
+      </thead>
+      <tbody>
+        
+      </tbody>
+    </table>
+    
+  </body>
+</html>
